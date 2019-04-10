@@ -105,6 +105,21 @@ controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
+.PHONY: apiserver
+apiserver:
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-apiserver ./cmd/workflow-apiserver
+
+.PHONY: apiserver-image
+apiserver-image:
+ifeq ($(DEV_IMAGE), true)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o workflow-apiserver ./cmd/workflow-apiserver
+	docker build -t $(IMAGE_PREFIX)workflow-apiserver:$(IMAGE_TAG) -f Dockerfile.workflow-apiserver-dev .
+	rm -f workflow-apiserver
+else
+	docker build -t $(IMAGE_PREFIX)workflow-apiserver:$(IMAGE_TAG) --target workflow-apiserver .
+endif
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-apiserver:$(IMAGE_TAG) ; fi
+
 .PHONY: executor
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
